@@ -1,0 +1,7 @@
+node_modules/
+*.log
+data.json
+*.png
+lhr.log
+pinggy.log
+run.sh

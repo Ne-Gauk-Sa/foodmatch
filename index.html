@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FoodMatch – swipe to pick where to eat</title>
+<meta name="theme-color" content="#FF4F6D">
+<style>
+:root{--hot:#FF4F6D;--go:#1DB954;--bg:#FFF7F2;--card:#fff;--ink:#1d1b20;--mut:#6b6570;--line:#eadfd8;--sub:#f6ede7}
+@media (prefers-color-scheme:dark){:root{--bg:#141216;--card:#1f1c22;--ink:#f3eef5;--mut:#a79fae;--line:#35303a;--sub:#29252d}}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:560px;margin:0 auto;padding:14px 12px 60px;display:flex;flex-direction:column;gap:14px}
+.logo{font-size:28px;font-weight:900;letter-spacing:-.5px}.logo b{color:var(--hot)}
+.mut{color:var(--mut);font-size:14px}.small{font-size:13px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.between{justify-content:space-between}.center{justify-content:center;text-align:center}
+button,.btn{font:inherit;font-weight:700;font-size:15px;border-radius:12px;padding:10px 16px;border:none;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;justify-content:center}
+.primary{background:var(--hot);color:#fff}.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:600}
+.dark{background:var(--ink);color:var(--bg)}
+button:disabled{opacity:.4;cursor:default}
+.chip{padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:14px;font-weight:600}
+.chip.on{background:var(--hot);border-color:var(--hot);color:#fff}
+input,select{font:inherit;font-size:16px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%;min-width:0}
+label{display:block;font-weight:600;font-size:14px;color:var(--mut);margin:10px 0 6px}
+h2{font-size:18px;margin:0 0 8px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#bbb;margin-right:6px}.dot.on{background:var(--go)}.dot.bad{background:#f5a524}
+.list{display:flex;flex-direction:column;gap:6px}.item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:var(--sub)}
+.stack{position:relative;height:440px;margin:4px 6px 8px}
+.card{position:absolute;inset:0;border-radius:24px;overflow:hidden;background:var(--card);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.18);touch-action:none;user-select:none;-webkit-user-select:none;transition:transform .22s ease}
+.card.top{cursor:grab}.card .art{height:58%;display:flex;align-items:center;justify-content:center;font-size:96px;position:relative}
+.card .body{padding:14px 18px}.card .nm{font-size:22px;font-weight:800}.card .cu{color:var(--mut);font-size:14px;font-weight:600;margin:2px 0 8px}.card .ds{font-size:15px;line-height:21px}
+.price{position:absolute;bottom:12px;right:14px;background:rgba(255,255,255,.8);border-radius:999px;padding:4px 10px;font-weight:800;font-size:14px;color:#222}
+.stamp{position:absolute;top:18px;padding:4px 12px;border-radius:10px;font-weight:900;font-size:26px;background:rgba(255,255,255,.8);opacity:0}
+.stamp.yes{left:18px;border:4px solid var(--go);color:var(--go);transform:rotate(-14deg)}.stamp.no{right:18px;border:4px solid var(--hot);color:var(--hot);transform:rotate(14deg)}
+.round{width:72px;height:72px;border-radius:999px;font-size:30px;background:var(--card)}
+.rno{border:2px solid var(--hot);color:var(--hot)}.ryes{border:2px solid var(--go);color:var(--go)}.rundo{width:52px;height:52px;border-radius:999px;padding:0;font-size:20px}
+.bar{position:relative;height:12px;border-radius:999px;background:var(--sub);margin-top:6px;overflow:hidden}.fill{height:100%;border-radius:999px;transition:width .3s}
+.thr{position:absolute;top:0;bottom:0;border-left:2px dashed var(--ink)}
+.match{position:relative;overflow:hidden;text-align:center;border:2px solid var(--hot)}.match.anim{animation:pop .5s ease}
+.conf{position:absolute;top:0;font-size:26px;pointer-events:none;animation:fall 2.6s linear infinite}
+@keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.06);opacity:1}100%{transform:scale(1)}}
+@keyframes fall{0%{transform:translateY(-40px) rotate(0)}100%{transform:translateY(560px) rotate(360deg);opacity:0}}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;max-width:90vw;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+#toast.show{opacity:1}
+.code{font-family:ui-monospace,Menlo,monospace;font-weight:800;letter-spacing:2px;font-size:20px}
+.linkbox{font-family:ui-monospace,Menlo,monospace;font-size:13px;word-break:break-all;padding:10px;border-radius:10px;background:var(--sub)}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div id="toast"></div>
+<script src="/logic.js"></script>
+<script>
+(function(){
+var COLORS=['#FFD6A5','#FDFFB6','#CAFFBF','#9BF6FF','#A0C4FF','#BDB2FF','#FFC6FF','#FFADAD'];
+var app=document.getElementById('app');
+var S=null, me=null, ws=null, conn='connecting', tab='swipe', dismissed='', retry=0, pendingJoin=null;
+var popped='';var drag={on:false,x:0,start:0}, flying=false, pendingRender=false;
+var F={cName:'',cGroup:'',jCode:'',jName:'',newMember:'',phone:'',oName:'',oCuisine:'',oPrice:'2',oDesc:'',oEmoji:'🍽️',pct:''};
+var urlCode=(location.pathname.match(/^\/g\/([A-Za-z0-9]+)/)||[])[1]||new URLSearchParams(location.search).get('g')||'';
+urlCode=urlCode.toUpperCase(); F.jCode=urlCode;
+function sessions(){try{return JSON.parse(localStorage.getItem('fm-sessions')||'{}')}catch(e){return{}}}
+function saveSession(code,s){try{var a=sessions();if(s)a[code]=s;else delete a[code];localStorage.setItem('fm-sessions',JSON.stringify(a))}catch(e){}}
+try{F.cName=F.jName=localStorage.getItem('fm-name')||''}catch(e){}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function $(sel){return app.querySelector(sel)}
+var toastT;function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove('show')},2400)}
+function dollars(n){return '$$$$'.slice(0,Math.max(1,Math.min(4,n)))}
+function ruleLabel(r){return r.mode==='majority'?'Majority (more than 50%)':r.mode==='twoThirds'?'Two-thirds (66.7%)':r.mode==='unanimous'?'Unanimous (100%)':'Custom ('+r.pct+'% or more)'}
+function send(o){if(ws&&ws.readyState===1){ws.send(JSON.stringify(o));return true}toast('Reconnecting… try again in a second');return false}
+function inviteLink(){return location.origin+'/g/'+S.code}
+function inviteText(){return 'Help pick where we eat! Join "'+S.name+'" on FoodMatch and swipe: '+inviteLink()}
+function smsHref(){var n=F.phone.replace(/[^\d+]/g,'');var ios=/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)&&'ontouchend' in document;return 'sms:'+n+(ios?'&':'?')+'body='+encodeURIComponent(inviteText())}
+
+// ---------- connection ----------
+function connect(){
+  conn='connecting';render();
+  ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws');
+  ws.onopen=function(){retry=0;conn='online';
+    var code=(S&&S.code)||pendingJoin||urlCode; var s=code&&sessions()[code];
+    if(s) ws.send(JSON.stringify({t:'join',code:code,memberId:s.memberId,key:s.key}));
+    render();};
+  ws.onmessage=function(e){var m=JSON.parse(e.data);
+    if(m.t==='joined'){me=m;saveSession(m.code,{memberId:m.memberId,key:m.key});if(location.pathname!=='/g/'+m.code)history.replaceState(null,'','/g/'+m.code);}
+    else if(m.t==='state'){var first=!S;S=m.state;if(!S.members.some(function(x){return me&&x.id===me.memberId})&&me){}
+      if(drag.on||flying){pendingRender=true;return}render();if(first)toast('You\'re in '+S.name+'!');}
+    else if(m.t==='error'){toast(m.error);if(!S){var c=pendingJoin||urlCode;if(c&&/No group/.test(m.error))saveSession(c,null);render()}}
+    else if(m.t==='removed'){saveSession(S.code,null);S=null;me=null;toast('You were removed from the group');history.replaceState(null,'','/');render()}
+  };
+  ws.onclose=function(){conn='offline';render();retry=Math.min(retry+1,6);setTimeout(connect,500*retry)};
+}
+setInterval(function(){if(ws&&ws.readyState===1)ws.send('{"t":"ping"}')},20000);
+
+// ---------- helpers ----------
+function myVotes(){return (S&&me&&S.votes[me.memberId])||{}}
+function remaining(){var v=myVotes();return S.options.filter(function(o){return v[o.id]===undefined})}
+function done(mid){var v=S.votes[mid]||{};return S.options.filter(function(o){return v[o.id]!==undefined}).length}
+function yesOf(o){return S.members.filter(function(m){return S.votes[m.id]&&S.votes[m.id][o.id]===true}).length}
+function noOf(o){return S.members.filter(function(m){return S.votes[m.id]&&S.votes[m.id][o.id]===false}).length}
+function winKey(){return S.winner?S.round+':'+S.winner.id:''}
+
+// ---------- render ----------
+function render(){
+  var ae=document.activeElement, fid=ae&&ae.id, sel=null; try{if(fid&&ae.selectionStart!=null)sel=[ae.selectionStart,ae.selectionEnd]}catch(e){}
+  app.innerHTML=S&&me?groupView():homeView();
+  bind();
+  if(fid){var el=document.getElementById(fid);if(el){el.focus();try{if(sel)el.setSelectionRange(sel[0],sel[1])}catch(e){}}}
+}
+function statusDot(){return '<span class="dot '+(conn==='online'?'on':conn==='offline'?'bad':'')+'"></span>'+(conn==='online'?'Live':conn==='offline'?'Reconnecting…':'Connecting…')}
+function homeView(){
+  var ss=sessions(), keys=Object.keys(ss);
+  var h='<div class="row between"><div class="logo"><b>Food</b>Match 🍕</div><div class="mut">'+statusDot()+'</div></div>';
+  h+='<div class="mut">Swipe on restaurants with your group, each on your own phone. When enough of you say yes, it\'s a match.</div>';
+  if(urlCode){
+    h+='<div class="panel"><h2>Join group <span class="code">'+esc(urlCode)+'</span></h2><div class="mut">You were invited! Pick a display name. No password or account needed.</div>'+
+      '<label for="jName">Your name</label><input id="jName" data-f="jName" maxlength="30" placeholder="e.g. Priya" value="'+esc(F.jName)+'">'+
+      '<div style="margin-top:12px"><button class="primary" id="joinBtn">Join and start swiping</button></div></div>';
+  }
+  h+='<div class="panel"><h2>Create a group</h2>'+
+    '<label for="cName">Your name</label><input id="cName" data-f="cName" maxlength="30" placeholder="e.g. Randy" value="'+esc(F.cName)+'">'+
+    '<label for="cGroup">Group name</label><input id="cGroup" data-f="cGroup" maxlength="40" placeholder="e.g. Lunch Crew" value="'+esc(F.cGroup)+'">'+
+    '<div style="margin-top:12px"><button class="primary" id="createBtn">Create group</button></div>'+
+    '<div class="mut small" style="margin-top:8px">Starts with 12 sample restaurants. You\'ll get a link and code to invite people.</div></div>';
+  if(!urlCode){
+    h+='<div class="panel"><h2>Join with a code</h2>'+
+      '<label for="jCode">Group code</label><input id="jCode" data-f="jCode" maxlength="8" placeholder="6 letters, e.g. K7PQ2M" value="'+esc(F.jCode)+'" style="text-transform:uppercase">'+
+      '<label for="jName">Your name</label><input id="jName" data-f="jName" maxlength="30" placeholder="e.g. Priya" value="'+esc(F.jName)+'">'+
+      '<div style="margin-top:12px"><button class="ghost" id="joinBtn">Join group</button></div></div>';
+  }
+  if(keys.length){h+='<div class="panel"><h2>Your groups on this phone</h2><div class="list">'+keys.map(function(k){return '<div class="item"><span class="code" style="font-size:15px">'+esc(k)+'</span><button class="ghost" data-rejoin="'+esc(k)+'">Open</button></div>'}).join('')+'</div></div>'}
+  return h;
+}
+function groupView(){
+  var size=S.members.length, mine=S.members.find(function(m){return m.id===me.memberId})||{name:'?'};
+  var h='<div class="row between"><div><div class="logo"><b>Food</b>Match 🍕</div><div class="mut">'+esc(S.name)+' · '+size+' '+(size===1?'member':'members')+' · '+esc(ruleLabel(S.rule))+'</div></div>'+
+    '<div style="text-align:right"><div class="mut">'+statusDot()+'</div><div class="mut small">You: <b>'+esc(mine.name)+'</b> · <span class="code" style="font-size:13px">'+esc(S.code)+'</span></div></div></div>';
+  var tabs=[['swipe','🔥 Swipe'],['tally','📊 Live tally'],['invite','💌 Invite'],['group','👥 Group'],['options','🍽️ Options'],['rules','⚙️ Rules'],['help','❓ Help']];
+  h+='<div class="row">'+tabs.map(function(t){return '<button class="chip'+(tab===t[0]?' on':'')+'" data-tab="'+t[0]+'">'+t[1]+'</button>'}).join('')+'</div>';
+  var showMatch=S.winner&&dismissed!==winKey();
+  if(showMatch) h+=matchView();
+  if(tab==='swipe'&&!showMatch) h+=swipeView();
+  if(tab==='tally') h+=tallyView();
+  if(tab==='invite') h+=inviteView();
+  if(tab==='group') h+=membersView();
+  if(tab==='options') h+=optionsView();
+  if(tab==='rules') h+=rulesView();
+  if(tab==='help') h+=helpView();
+  return h;
+}
+function breakdown(o){return '<div class="list">'+S.members.map(function(m){var v=S.votes[m.id]?S.votes[m.id][o.id]:undefined;
+  return '<div class="item"><b>'+esc(m.name)+(m.id===me.memberId?' (you)':'')+'</b><b style="color:'+(v===true?'var(--go)':v===false?'var(--hot)':'var(--mut)')+'">'+(v===true?'👍 Yes':v===false?'👎 No':'⏳ Not yet')+'</b></div>'}).join('')+'</div>'}
+function matchView(){
+  var o=S.options.find(function(x){return x.id===S.winner.id}), size=S.members.length, w=S.winner;
+  var conf=['🎉','🥳','✨','🎊','🍾','⭐','🎉','✨'].map(function(e,i){return '<span class="conf" style="left:'+(i*12+4)+'%;animation-delay:'+(i*.15)+'s;animation-duration:'+(2.2+(i%3)*.6)+'s">'+e+'</span>'}).join('');
+  var an=popped!==winKey();popped=winKey();if(an&&navigator.vibrate)try{navigator.vibrate([80,40,80])}catch(e){}
+  return '<div class="panel match'+(an?' anim':'')+'">'+conf+'<div style="font-size:14px;font-weight:800;color:var(--hot);letter-spacing:2px">IT\'S A MATCH!</div>'+
+    '<div style="font-size:72px;margin:6px 0">'+esc(o.emoji)+'</div><div style="font-size:26px;font-weight:900">'+(w.yes===size?'Everyone agreed on ':'Your group picked ')+esc(o.name)+'!</div>'+
+    '<div class="mut" style="margin:6px 0 14px">'+esc(o.cuisine)+' · '+dollars(o.price)+' · '+w.yes+' of '+size+' said yes ('+Math.round(w.share*100)+'%), meeting the '+esc(ruleLabel(S.rule))+' rule.</div>'+
+    '<div style="text-align:left;margin-bottom:14px">'+breakdown(o)+'</div>'+
+    '<div class="row center"><button class="primary" id="newRound">🍽️ New round (everyone)</button><button class="ghost" data-tab="tally" id="seeTally">See full tally</button><button class="ghost" id="keep">Keep swiping</button></div></div>';
+}
+function cardHtml(o,depth){var top=depth===0;
+  return '<div class="card'+(top?' top':'')+'" '+(top?'id="topCard"':'')+' style="z-index:'+(10-depth)+';transform:translateY('+(depth*10)+'px) scale('+(1-depth*.04)+')">'+
+  '<div class="art" style="background:'+COLORS[(o.color||0)%8]+'"><span>'+esc(o.emoji)+'</span>'+(top?'<div class="stamp yes" id="stYes">YES</div><div class="stamp no" id="stNo">NOPE</div>':'')+'<div class="price">'+dollars(o.price)+'</div></div>'+
+  '<div class="body"><div class="nm">'+esc(o.name)+'</div><div class="cu">'+esc(o.cuisine)+' · '+dollars(o.price)+'</div><div class="ds">'+esc(o.desc)+'</div></div></div>'}
+function swipeView(){
+  var rem=remaining(), size=S.members.length, allDone=S.members.every(function(m){return done(m.id)>=S.options.length});
+  var h='<div class="panel"><div class="mut" style="font-weight:600;margin-bottom:8px">Who\'s swiping (live)</div><div class="row">'+S.members.map(function(m){var d=done(m.id);
+    return '<span class="chip'+(m.id===me.memberId?' on':'')+'"><span class="dot '+(m.online?'on':'')+'"></span>'+esc(m.name)+' '+(d>=S.options.length?'✅':d+'/'+S.options.length)+'</span>'}).join('')+'</div></div>';
+  if(rem.length){
+    h+='<div style="text-align:center;font-weight:700">Would you eat here? <span class="mut">('+(S.options.length-rem.length+1)+' of '+S.options.length+')</span></div>';
+    h+='<div class="stack">'+rem.slice(0,3).map(function(o,i){return {o:o,i:i}}).reverse().map(function(x){return cardHtml(x.o,x.i)}).join('')+'</div>';
+    h+='<div class="row center" style="gap:18px"><button class="round rno" id="noBtn" aria-label="No">✕</button><button class="ghost rundo" id="undoBtn" aria-label="Undo"'+(Object.keys(myVotes()).length?'':' disabled')+'>↶</button><button class="round ryes" id="yesBtn" aria-label="Yes">♥</button></div>';
+    h+='<div class="mut small" style="text-align:center">Drag the card left for no, right for yes. Or tap the buttons, or use the ← → arrow keys.</div>';
+  } else {
+    h+='<div class="panel" style="text-align:center"><div style="font-size:48px">'+(allDone?'🤔':'🙌')+'</div><div style="font-size:20px;font-weight:800">'+(allDone?'Everyone\'s done, but no match yet':'You\'re done swiping!')+'</div>'+
+      '<div class="mut" style="margin:6px 0 12px">'+(allDone?'No option reached '+S.needed+' of '+size+' yes votes. Try a looser rule, add options, or start a new round.':'Waiting for the others. You\'ll see the match here the moment it happens.')+'</div>'+
+      '<div class="row center">'+(allDone?'<button class="primary" data-tab="rules">Change the rule</button><button class="ghost" id="newRound">New round</button>':'<button class="primary" data-tab="invite">Invite more people</button>')+'<button class="ghost" data-tab="tally">See tally</button>'+
+      (Object.keys(myVotes()).length?'<button class="ghost" id="undoBtn">↶ Undo last</button>':'')+'</div></div>';
+  }
+  if(size<2) h+='<div class="panel row between"><div class="mut" style="flex:1 1 220px">It\'s just you so far. Invite people, or add a couple of demo voters to try it out.</div><button class="ghost" data-tab="invite">💌 Invite</button><button class="dark" id="bots">🤖 Add 2 demo voters</button></div>';
+  return h;
+}
+function tallyView(){
+  var size=S.members.length, thr=size?S.needed/size*100:0;
+  var rows=S.options.map(function(o,i){return {o:o,i:i,yes:yesOf(o),no:noOf(o)}}).sort(function(a,b){return b.yes-a.yes||a.i-b.i});
+  var h='<div class="panel"><h2>Live tally</h2><div class="mut" style="margin-bottom:14px">Rule: '+esc(ruleLabel(S.rule))+'. With '+size+' '+(size===1?'person':'people')+', an option needs '+S.needed+' yes '+(S.needed===1?'vote':'votes')+' to win. The dashed line marks the bar.</div><div class="list" style="gap:12px">';
+  rows.forEach(function(r){var pct=size?r.yes/size*100:0, ok=FoodLogic.meets(r.yes,size,S.rule), win=S.winner&&S.winner.id===r.o.id;
+    h+='<div><div class="row between" style="font-size:15px"><b>'+esc(r.o.emoji)+' '+esc(r.o.name)+(win?' 🏆':'')+'</b><span class="mut">👍 '+r.yes+' · 👎 '+r.no+' · ⏳ '+(size-r.yes-r.no)+' · <b style="color:'+(ok?'var(--go)':'var(--ink)')+'">'+Math.round(pct)+'%</b></span></div>'+
+      '<div class="bar"><div class="fill" style="width:'+pct+'%;background:'+(ok?'var(--go)':'var(--hot)')+'"></div><div class="thr" style="left:calc('+Math.min(thr,99.5)+'% - 1px)"></div></div></div>'});
+  h+='</div>';
+  if(S.winner){var o=S.options.find(function(x){return x.id===S.winner.id});h+='<div style="margin-top:16px;font-weight:700">🏆 Current winner: '+esc(o.name)+' ('+S.winner.yes+'/'+size+') <button class="ghost" id="showMatch" style="padding:6px 10px">Show match</button></div>'}
+  return h+'</div>';
+}
+function inviteView(){
+  return '<div class="panel"><h2>Invite people</h2><div class="mut">Anyone with this link can join from their own phone. No app or account needed.</div>'+
+    '<div style="margin:12px 0 4px" class="mut">Group code</div><div class="code">'+esc(S.code)+'</div>'+
+    '<div style="margin:12px 0 4px" class="mut">Invite link</div><div class="linkbox" id="linkBox">'+esc(inviteLink())+'</div>'+
+    '<div class="row" style="margin-top:10px"><button class="primary" id="copyBtn">📋 Copy link</button>'+(navigator.share?'<button class="ghost" id="shareBtn">📤 Share…</button>':'')+'</div>'+
+    '<label for="phone">Text an invite to a phone number</label><div class="row" style="flex-wrap:nowrap"><input id="phone" data-f="phone" type="tel" inputmode="tel" placeholder="(555) 123-4567" value="'+esc(F.phone)+'"><a class="btn primary" id="smsBtn" href="'+esc(smsHref())+'">💬 Text</a></div>'+
+    '<div class="mut small" style="margin-top:8px">This opens your phone\'s Messages app with the invite already written; you tap send. It works on phones, not most computers.</div></div>';
+}
+function membersView(){
+  var h='<div class="panel"><h2>Group</h2><label for="gName">Group name (everyone sees changes)</label><div class="row" style="flex-wrap:nowrap"><input id="gName" data-f="gName" maxlength="40" value="'+esc(F.gName!=null?F.gName:S.name)+'"><button class="ghost" id="gNameBtn">Save</button></div>'+
+    '<label>Members ('+S.members.length+')</label><div class="list">';
+  S.members.forEach(function(m){h+='<div class="item"><span><span class="dot '+(m.online?'on':'')+'"></span><b>'+esc(m.name)+'</b>'+(m.id===me.memberId?' (you)':'')+(m.bot?' · demo voter':'')+' <span class="mut">· '+done(m.id)+'/'+S.options.length+' swiped</span></span>'+
+    (m.id===me.memberId?'<button class="ghost" id="leaveBtn" style="padding:4px 10px">Leave</button>':'<button class="ghost" data-rm="'+m.id+'" style="padding:4px 10px">Remove</button>')+'</div>'});
+  h+='</div><div class="mut small" style="margin-top:10px">A green dot means that person has the app open right now. Group size includes everyone listed, so removing someone changes how many yes votes are needed.</div>'+
+    '<div class="row" style="margin-top:12px"><button class="ghost" data-tab="invite">💌 Invite people</button><button class="ghost" id="bots">🤖 Add 2 demo voters</button><button class="ghost" id="newRound">↻ New round (clears all votes)</button></div></div>';
+  return h;
+}
+function optionsView(){
+  var h='<div class="panel"><h2>Add your own option</h2><div class="mut small">Everyone in the group gets it in their deck right away.</div>'+
+  '<div style="display:grid;grid-template-columns:70px 1fr;gap:8px;margin-top:10px"><input id="oEmoji" data-f="oEmoji" style="text-align:center;font-size:22px" value="'+esc(F.oEmoji)+'" aria-label="Emoji"><input id="oName" data-f="oName" maxlength="50" placeholder="Place or dish name" value="'+esc(F.oName)+'"></div>'+
+  '<div style="display:grid;grid-template-columns:1fr 110px;gap:8px;margin-top:8px"><input id="oCuisine" data-f="oCuisine" maxlength="30" placeholder="Cuisine (e.g. Thai)" value="'+esc(F.oCuisine)+'"><select id="oPrice" data-f="oPrice">'+[1,2,3,4].map(function(p){return '<option value="'+p+'"'+(F.oPrice==p?' selected':'')+'>'+dollars(p)+'</option>'}).join('')+'</select></div>'+
+  '<input id="oDesc" data-f="oDesc" maxlength="160" style="margin-top:8px" placeholder="Short description" value="'+esc(F.oDesc)+'">'+
+  '<div style="margin-top:10px"><button class="primary" id="addOpt">+ Add to deck</button></div>'+
+  '<h2 style="margin-top:20px">The deck ('+S.options.length+')</h2><div class="list">';
+  S.options.forEach(function(o){h+='<div class="item"><span><span style="display:inline-block;width:30px;height:30px;line-height:30px;text-align:center;border-radius:8px;margin-right:8px;background:'+COLORS[(o.color||0)%8]+'">'+esc(o.emoji)+'</span><b>'+esc(o.name)+'</b> <span class="mut">· '+esc(o.cuisine)+' · '+dollars(o.price)+'</span></span><button class="ghost" data-ro="'+o.id+'" style="padding:4px 10px">Remove</button></div>'});
+  return h+'</div></div>';
+}
+function rulesView(){
+  var r=S.rule, size=S.members.length;
+  return '<div class="panel"><h2>Ruling threshold</h2><div class="mut" style="margin-bottom:12px">How much of the group must say yes for a match. This setting is shared: when anyone changes it, it changes for everyone instantly.</div>'+
+    '<div class="row">'+[['majority','Majority >50%'],['twoThirds','Two-thirds 66.7%'],['unanimous','Unanimous 100%'],['custom','Custom']].map(function(p){return '<button class="chip'+(r.mode===p[0]?' on':'')+'" data-rule="'+p[0]+'">'+p[1]+'</button>'}).join('')+'</div>'+
+    '<div style="margin-top:16px;opacity:'+(r.mode==='custom'?1:.55)+'"><div class="mut" style="font-weight:600;margin-bottom:6px">Custom percentage'+(r.mode!=='custom'?' (move the slider to use it)':'')+'</div>'+
+    '<div class="row" style="flex-wrap:nowrap"><input id="pctRange" type="range" min="1" max="100" step="1" value="'+r.pct+'" style="flex:1;accent-color:var(--hot);padding:0"><input id="pctNum" type="number" min="1" max="100" value="'+r.pct+'" style="width:84px"><b>%</b></div></div>'+
+    '<div class="item" style="margin-top:16px;display:block;font-size:15px">With <b>'+size+'</b> '+(size===1?'person':'people')+' and <b>'+esc(ruleLabel(r))+'</b>, an option needs <b>'+S.needed+' yes '+(S.needed===1?'vote':'votes')+'</b> to win.</div></div>';
+}
+function helpView(){
+  var items=[['1. Create or join','One person creates a group and gets a link and 6-letter code. Everyone else opens the link on their own phone and types a display name.'],
+  ['2. Invite','On the Invite tab: copy the link, use Share to send it through any app, or type a phone number to open Messages with the invite pre-written.'],
+  ['3. Swipe','Drag right or tap ♥ for yes, drag left or tap ✕ for no. Arrow keys work on a computer, and ↶ undoes your last swipe.'],
+  ['4. Pick the rule','Majority (more than half), Two-thirds, Unanimous, or a custom percentage. It\'s one shared setting for the whole group.'],
+  ['5. Match!','An option wins as soon as its yes votes divided by the group size meets the rule. Votes not cast yet count as not yes. If several qualify, the most yes votes wins; ties go to the option higher in the deck. Everyone sees the match at the same moment.'],
+  ['6. Go again','New round clears everyone\'s votes but keeps the group and options.']];
+  return '<div class="panel"><h2>How it works</h2>'+items.map(function(i){return '<div style="margin-bottom:12px"><b>'+i[0]+'</b><div class="mut">'+i[1]+'</div></div>'}).join('')+'</div>';
+}
+
+// ---------- events ----------
+function vote(yes){
+  if(!S||flying||(S.winner&&dismissed!==winKey()))return; var rem=remaining(); if(!rem.length)return; var o=rem[0], c=document.getElementById('topCard');
+  if(ws.readyState!==1){toast('Reconnecting… try again in a second');return}
+  flying=true; if(c){c.style.transition='transform .22s ease';c.style.transform='translateX('+(yes?600:-600)+'px) rotate('+(yes?30:-30)+'deg)'}
+  setTimeout(function(){flying=false; S.votes[me.memberId]=Object.assign({},S.votes[me.memberId]);S.votes[me.memberId][o.id]=!!yes; send({t:'vote',optionId:o.id,yes:!!yes}); pendingRender=false; render()},220);
+}
+function bindCard(){
+  var c=document.getElementById('topCard'); if(!c)return; var sy=document.getElementById('stYes'), sn=document.getElementById('stNo');
+  function move(x){c.style.transform='translateX('+x+'px) rotate('+(x/18)+'deg)';sy.style.opacity=Math.max(0,Math.min(1,(x-20)/80));sn.style.opacity=Math.max(0,Math.min(1,(-x-20)/80))}
+  c.addEventListener('pointerdown',function(e){if(flying)return;drag.on=true;drag.start=e.clientX;drag.x=0;c.style.transition='none';try{c.setPointerCapture(e.pointerId)}catch(_){}});
+  c.addEventListener('pointermove',function(e){if(!drag.on)return;drag.x=e.clientX-drag.start;move(drag.x)});
+  function up(){if(!drag.on)return;drag.on=false;var x=drag.x;drag.x=0;if(x>90)vote(true);else if(x<-90)vote(false);else{c.style.transition='transform .22s ease';move(0);if(pendingRender){pendingRender=false;render()}}}
+  c.addEventListener('pointerup',up);c.addEventListener('pointercancel',up);
+}
+function on(id,fn){var el=document.getElementById(id);if(el)el.addEventListener('click',fn)}
+function bind(){
+  app.querySelectorAll('[data-f]').forEach(function(el){el.addEventListener('input',function(){F[el.getAttribute('data-f')]=el.value;
+    if(el.id==='phone'){var a=document.getElementById('smsBtn');if(a)a.href=smsHref()}
+    if(el.id==='cName'||el.id==='jName'){try{localStorage.setItem('fm-name',el.value)}catch(e){}}});
+    el.addEventListener('keydown',function(e){if(e.key!=='Enter')return;var id=el.id;
+      if(id==='cName'||id==='cGroup')doCreate(); else if(id==='jName'||id==='jCode')doJoin(); else if(id==='oDesc'||id==='oName')doAddOpt(); else if(id==='gName')saveGName();});});
+  app.querySelectorAll('[data-tab]').forEach(function(b){b.addEventListener('click',function(){tab=b.getAttribute('data-tab');render();window.scrollTo(0,0)})});
+  app.querySelectorAll('[data-rejoin]').forEach(function(b){b.addEventListener('click',function(){var k=b.getAttribute('data-rejoin'),s=sessions()[k];pendingJoin=k;send({t:'join',code:k,memberId:s.memberId,key:s.key})})});
+  app.querySelectorAll('[data-rule]').forEach(function(b){b.addEventListener('click',function(){send({t:'rule',rule:{mode:b.getAttribute('data-rule'),pct:S.rule.pct}})})});
+  app.querySelectorAll('[data-rm]').forEach(function(b){b.addEventListener('click',function(){var m=S.members.find(function(x){return x.id===b.getAttribute('data-rm')});if(m&&confirm('Remove '+m.name+' from the group?'))send({t:'removeMember',memberId:m.id})})});
+  app.querySelectorAll('[data-ro]').forEach(function(b){b.addEventListener('click',function(){send({t:'removeOption',optionId:b.getAttribute('data-ro')})})});
+  on('createBtn',doCreate);on('joinBtn',doJoin);on('addOpt',doAddOpt);on('gNameBtn',saveGName);
+  on('yesBtn',function(){vote(true)});on('noBtn',function(){vote(false)});on('undoBtn',function(){send({t:'undo'})});
+  on('bots',function(){send({t:'addBots',count:2});toast('Added demo voters. They vote randomly.')});
+  on('newRound',function(){if(confirm('Start a new round? This clears everyone\'s votes.')){send({t:'newRound'});tab='swipe'}});
+  on('keep',function(){dismissed=winKey();render()});on('showMatch',function(){dismissed='';tab='swipe';render()});
+  on('leaveBtn',function(){if(confirm('Leave this group?')){send({t:'removeMember',memberId:me.memberId})}});
+  on('copyBtn',function(){copy(inviteLink())});
+  on('shareBtn',function(){navigator.share({title:'FoodMatch: '+S.name,text:inviteText(),url:inviteLink()}).catch(function(){})});
+  on('smsBtn',function(e){if(!F.phone.replace(/\D/g,'')){e.preventDefault();toast('Type a phone number first');}});
+  var pr=document.getElementById('pctRange'),pn=document.getElementById('pctNum');
+  if(pr){pr.addEventListener('input',function(){pn.value=pr.value});pr.addEventListener('change',function(){send({t:'rule',rule:{mode:'custom',pct:+pr.value}})});
+    pn.addEventListener('change',function(){var v=Math.max(1,Math.min(100,+pn.value||1));send({t:'rule',rule:{mode:'custom',pct:v}})});}
+  bindCard();
+}
+function copy(text){
+  function fallback(){var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('Link copied!')}catch(e){toast('Copy failed. Press and hold the link to copy it.')}ta.remove()}
+  if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(text).then(function(){toast('Link copied!')},fallback);else fallback();
+}
+function doCreate(){if(!F.cName.trim())return toast('Type your name first');send({t:'create',name:F.cName,groupName:F.cGroup||'Our group'})}
+function doJoin(){var code=(F.jCode||urlCode).trim().toUpperCase();if(!code)return toast('Type the group code');if(!F.jName.trim())return toast('Type your name first');pendingJoin=code;var s=sessions()[code];send(s?{t:'join',code:code,memberId:s.memberId,key:s.key}:{t:'join',code:code,name:F.jName})}
+function doAddOpt(){if(!F.oName.trim())return toast('Give the option a name first');send({t:'addOption',option:{name:F.oName,cuisine:F.oCuisine,price:+F.oPrice,desc:F.oDesc,emoji:F.oEmoji}});toast(F.oName+' added for everyone');F.oName=F.oCuisine=F.oDesc='';F.oEmoji='🍽️';F.oPrice='2';render()}
+function saveGName(){if(F.gName&&F.gName.trim())send({t:'renameGroup',name:F.gName});F.gName=null;toast('Group name saved')}
+document.addEventListener('keydown',function(e){if(!S||tab!=='swipe')return;var t=e.target;if(t&&/INPUT|TEXTAREA|SELECT/.test(t.tagName))return;
+  if(e.key==='ArrowLeft'){e.preventDefault();vote(false)}if(e.key==='ArrowRight'){e.preventDefault();vote(true)}});
+render();connect();
+})();
+</script>
+</body>
+</html>
